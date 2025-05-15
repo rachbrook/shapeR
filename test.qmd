@@ -1,0 +1,95 @@
+---
+title: "ShapeR Test"
+author: "Rachel Brooks"
+format: html
+editor: visual
+---
+
+# Upload photos and data file
+
+```{r, warning=FALSE}
+
+# load shape R and retreive the example data 
+library(here) 
+library(shapeR) 
+
+#Set project path to the folder 'ShapeAnalysis' 
+shape_test = shapeR(project.path = here("ShapeAnalysisTest"),info.file = "FISH-TEST.csv") 
+
+#fish_info <- read.csv(here("ShapeAnalysisTest", "FISH-TEST.csv"))
+
+```
+
+# Create outline from image files
+
+```{r, warning=FALSE}
+
+# Trace orange outline around otolith - saves in Original_with_outline
+shape_test = detect.outline(shape_test, threshold = 0.2, write.outline.w.org =FALSE)
+
+# Smooth outlines 
+shape_test = smoothout(shape_test, n = 100)
+
+# Extract shape coefficient
+shape_test = generateShapeCoefficients(shape_test)
+
+# Connect data file 'FISH.csv' to the outlines
+shape_test = enrich.master.list(shape_test)
+
+# Save shape object
+save(shape_test, file = "Test.RData")
+
+```
+
+# Calculate mean otolith morphometric variables
+
+```{r}
+
+# Get length, width, area, perimeter of otolith
+measurements <- getMeasurements(shape_test)
+
+# Calculate mean of the otolith morphometric variable: 
+# Otolith area
+tapply(getMeasurements(shape_test)$otolith.area, getMasterlist(shape_test)$species, mean)
+# Otolith perimeter
+tapply(getMeasurements(shape_test)$otolith.perimeter, getMasterlist(shape_test)$species, mean)
+# Otolith length
+tapply(getMeasurements(shape_test)$otolith.length, getMasterlist(shape_test)$species, mean)
+# Otolith width
+tapply(getMeasurements(shape_test)$otolith.width, getMasterlist(shape_test)$species, mean)
+
+```
+
+# Plot otolith shape
+
+```{r}
+
+# Plot mean otolith shape using Wavelet coefficient 
+plotWaveletShape(shape_test, "species", show.angle = TRUE, lwd = 2,lty = 1)
+
+# Plot mean otolith shape using Fourier coefficient 
+plotFourierShape(shape_test, "species", show.angle = TRUE, lwd = 2,lty = 1)
+
+```
+
+# Adjust coefficients for fish length
+
+*need to add fish length associated with each otolith*
+
+```{r}
+
+shape = stdCoefs(shape_test, classes = "species", "length_cm", bonferroni = TRUE)
+
+```
+
+# Reconstruction
+
+```{r}
+
+est.list = estimate.outline.reconstruction(shape_test)
+
+outline.reconstruction.plot(est.list, max.num.harmonics = 12)
+
+plotWavelet(shape_test, level = 5, class.name = "species", useStdcoef = TRUE)
+
+```
